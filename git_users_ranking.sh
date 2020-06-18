@@ -88,11 +88,11 @@ function extract_number_of_commits() {
 	rm people commits_for_each_person
 	(cd repos
 		echo "Estract commits using shortlog"
-		ls|grep git|xargs -I {} -n1 -P10 bash -c 'cd {};git shortlog -s -n --all >>../commits_for_each_person'
+		ls|grep git|xargs -I {} -n1 -P10 bash -c 'cd {};git shortlog -s -n -e --all >>../commits_for_each_person'
 		echo "Formatting commits file"
-		cat commits_for_each_person |sed 's/^ *//'|sed 's/\t/|/'>tmp;mv tmp commits_for_each_person
+		cat commits_for_each_person |sed 's/^ *//'|sed 's/\t/|/'|sed 's/ </|/'|sed 's/>//'>tmp;mv tmp commits_for_each_person
 		echo "Create file people with uniq names"
-		cut -d'|' -f2 commits_for_each_person |sort|uniq>../people
+		cut -d'|' -f3 commits_for_each_person |sort|uniq>../people
 		mv commits_for_each_person ..
 		)
 
@@ -105,11 +105,11 @@ function create_ranking() {
 	j=1
 	while read name;do
 		echo "Extracting user $j with name $name"
-		n=$(grep "$name" commits_for_each_person|cut -d'|' -f1|awk '{ sum += $1; } END { print sum; }' "$@")
+		n=$(awk -v name="$name" -F '|' '$3 == name {sum += $1} END {print sum}' commits_for_each_person)
 		echo "$n|$name">>commits_ordered
 		let "j++"
 	done<"people"
-	sort commits_ordered>tmp;mv tmp commits_ordered
+	sort -rn commits_ordered|cat -n>tmp;mv tmp commits_ordered
 	#cat people|xargs -I VAR -n1 echo "`awk -F '|' '$2 ~ /VAR/ {sum += $1} END {print sum}' commits_for_each_person`|VAR">>commits_ordered)
 	
 }
@@ -119,7 +119,7 @@ function create_ranking() {
 #list_public_repos
 #extract_repos_name
 #download_bare_info
-#extract_number_of_commits
+extract_number_of_commits
 create_ranking
 
 #listar numero de comandos
