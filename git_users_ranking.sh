@@ -3,10 +3,13 @@
 # change those vars :
 GITHUB_ORG=
 GITHUB_ACCESS_TOKEN=
+
+
 OUTPUT_FILE_PERSONAL=repo_list_personal.json
 OUTPUT_FILE_PUBLIC=repo_list_public.json
 TMP_FILE=tmpfile.txt
 PER_PAGE=100
+
 function list_personal_repos() {
 	loop=0
 	index=1
@@ -74,21 +77,24 @@ function list_public_repos() {
 }
 
 function extract_repos_name(){
+	echo "Extract repos_names from repo_list"
 	ls *repo_list*|xargs -I {} bash -c "grep "full_name" {} |cut -d/ -f2|cut -d'\"' -f1 >>repos_names"
 }
 
 function download_bare_info(){
+	echo "Download bare info for each project on repos_names file"
 	mkdir repos
 	(cd repos
-	cat repos_names|xargs -I {} -n1 -P10 bash -c "git clone --bare git@github.com:Telefonica/{}"
+	cat ../repos_names|xargs -I {} -n1 -P10 bash -c "git clone --bare git@github.com:Telefonica/{}.git"
 	)
 }
 
 function extract_number_of_commits() {
+	echo "Extracting number of commits"
 	rm people commits_for_each_person
 	(cd repos
-		echo "Estract commits using shortlog"
-		ls|grep git|xargs -I {} -n1 -P10 bash -c 'cd {};git shortlog -s -n -e --all >>../commits_for_each_person'
+		echo "Extract commits using shortlog"
+		ls|grep git|xargs -I {} -n1 -P10 bash -c 'echo "{}">repos_processed;cd {};git shortlog -s -n -e --all >>../commits_for_each_person'
 		echo "Formatting commits file"
 		cat commits_for_each_person |sed 's/^ *//'|sed 's/\t/|/'|sed 's/ </|/'|sed 's/>//'>tmp;mv tmp commits_for_each_person
 		echo "Create file people with uniq names"
@@ -114,13 +120,15 @@ function create_ranking() {
 	
 }
 
-
-#list_personal_repos
-#list_public_repos
-#extract_repos_name
-#download_bare_info
-extract_number_of_commits
-create_ranking
+function main(){
+	list_personal_repos
+	list_public_repos
+	extract_repos_name
+	download_bare_info
+	extract_number_of_commits
+	create_ranking
+}
+main
 
 #listar numero de comandos
 #git shortlog -s -n --all --no-merges
